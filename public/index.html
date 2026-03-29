@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Puzzle Login</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body { font-family: sans-serif; padding: 20px; background: #f0f0f0; }
+        .box { background: white; padding: 20px; border-radius: 10px; max-width: 400px; margin: auto; }
+        input { width: 100%; padding: 10px; margin: 10px 0; box-sizing: border-box; }
+        #captcha svg { width: 150px; cursor: pointer; display: block; margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <div class="box">
+        <h2 id="title">Login</h2>
+        <input type="email" id="email" placeholder="Email">
+        <input type="password" id="pass" placeholder="Password">
+        <div id="captcha"></div>
+        <input type="text" id="ans" placeholder="Type captcha here">
+        <button onclick="submit()" id="btn" style="width: 100%; padding: 10px;">Login</button>
+        <p onclick="toggle()" id="toggle" style="text-align:center; color:blue;">Need an account? Register</p>
+    </div>
+
+    <script>
+        let isLogin = true;
+        let capId = "";
+
+        async function loadCap() {
+            const r = await fetch('/.netlify/functions/api/captcha');
+            capId = r.headers.get('x-captcha-id');
+            document.getElementById('captcha').innerHTML = await r.text();
+        }
+
+        function toggle() {
+            isLogin = !isLogin;
+            document.getElementById('title').innerText = isLogin ? "Login" : "Register";
+            document.getElementById('toggle').innerText = isLogin ? "Need an account? Register" : "Have an account? Login";
+        }
+
+        async function submit() {
+            const path = isLogin ? 'login' : 'register';
+            const body = { 
+                email: document.getElementById('email').value, 
+                password: document.getElementById('pass').value,
+                captchaId: capId,
+                captchaAnswer: document.getElementById('ans').value
+            };
+
+            const r = await fetch('/.netlify/functions/api/' + path, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(body)
+            });
+
+            const d = await r.json();
+            alert(d.message || d.error || (d.token ? "Logged In!" : "Unknown Error"));
+            loadCap();
+        }
+        loadCap();
+    </script>
+</body>
+</html>
